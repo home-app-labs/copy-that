@@ -365,8 +365,14 @@ struct CardView: View {
         }
     }
 
+    /// Set when the text is a hex colour such as #FFB833: the card then shows the colour itself.
+    private var hexColor: (red: Double, green: Double, blue: Double, alpha: Double)? {
+        item.kind == .text ? Classifier.hexColor(item.text ?? "") : nil
+    }
+
     private var kindTitle: String {
-        item.kind == .file && item.filePaths.count > 1 ? "Files" : item.kind.title
+        if hexColor != nil { return "Color" }
+        return item.kind == .file && item.filePaths.count > 1 ? "Files" : item.kind.title
     }
 
     private var header: some View {
@@ -398,6 +404,8 @@ struct CardView: View {
     @ViewBuilder
     private var content: some View {
         switch item.kind {
+        case .text where hexColor != nil:
+            colorContent
         case .text:
             Text(Self.preview(item.text ?? ""))
                 .font(.system(size: 11.5))
@@ -430,6 +438,22 @@ struct CardView: View {
             ThumbnailView(url: store.blobURL(item, BlobType.png))
         case .file:
             fileContent
+        }
+    }
+
+    /// A swatch of the copied colour with its code on top, readable on light and dark colours alike.
+    private var colorContent: some View {
+        let color = hexColor ?? (0, 0, 0, 1)
+        let luminance = 0.299 * color.red + 0.587 * color.green + 0.114 * color.blue
+        let onLight = luminance > 0.6 && color.alpha > 0.5
+        return ZStack {
+            Color(red: color.red, green: color.green, blue: color.blue).opacity(color.alpha)
+            Text((item.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines).uppercased())
+                .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                .foregroundStyle(onLight ? Color.black.opacity(0.8) : .white)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background((onLight ? Color.white : Color.black).opacity(0.22), in: Capsule())
         }
     }
 
@@ -471,6 +495,9 @@ struct CardView: View {
 
     private var detail: String {
         switch item.kind {
+        case .text where hexColor != nil:
+            let color = hexColor ?? (0, 0, 0, 1)
+            return "RGB \(Int((color.red * 255).rounded())), \(Int((color.green * 255).rounded())), \(Int((color.blue * 255).rounded()))"
         case .text:
             let count = item.text?.count ?? 0
             return count == 1 ? "1 character" : "\(count.formatted()) characters"

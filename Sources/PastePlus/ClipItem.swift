@@ -68,6 +68,19 @@ enum Classifier {
         return true
     }
 
+    /// A colour written as #RGB, #RRGGBB or #RRGGBBAA and nothing else. Components are 0...1.
+    static func hexColor(_ string: String) -> (red: Double, green: Double, blue: Double, alpha: Double)? {
+        let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.hasPrefix("#") else { return nil }
+        var digits = Array(trimmed.dropFirst())
+        guard [3, 6, 8].contains(digits.count), digits.allSatisfy(\.isHexDigit) else { return nil }
+        if digits.count == 3 { digits = digits.flatMap { [$0, $0] } }
+        let values = stride(from: 0, to: digits.count, by: 2).map {
+            Double(Int(String(digits[$0...$0 + 1]), radix: 16) ?? 0) / 255
+        }
+        return (values[0], values[1], values[2], values.count == 4 ? values[3] : 1)
+    }
+
     static func fingerprint(kind: ClipItem.Kind, data: Data) -> String {
         var hasher = SHA256()
         // A link is text that happens to be a URL, so both share a namespace.

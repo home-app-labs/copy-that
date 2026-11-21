@@ -181,10 +181,31 @@ enum Debug {
         code.appName = "Xcode"; code.appBundleID = "com.apple.dt.Xcode"
         store.add(code)
 
+        var color = Capture.text("#FFB833")
+        color.appName = "Digital Color Meter"; color.appBundleID = "com.apple.DigitalColorMeter"
+        store.add(color)
+
+        // A small drawn landscape stands in for a screenshot.
         let image = NSImage(size: NSSize(width: 640, height: 400), flipped: false) { rect in
-            NSGradient(colors: [.systemTeal, .systemIndigo])!.draw(in: rect, angle: 30)
-            NSColor.white.withAlphaComponent(0.9).setFill()
-            NSBezierPath(roundedRect: rect.insetBy(dx: 120, dy: 110), xRadius: 16, yRadius: 16).fill()
+            NSGradient(colors: [NSColor(red: 1.00, green: 0.62, blue: 0.42, alpha: 1),
+                                NSColor(red: 0.42, green: 0.30, blue: 0.72, alpha: 1),
+                                NSColor(red: 0.16, green: 0.15, blue: 0.42, alpha: 1)])!.draw(in: rect, angle: 90)
+            NSColor(red: 1.00, green: 0.84, blue: 0.45, alpha: 1).setFill()
+            NSBezierPath(ovalIn: NSRect(x: 400, y: 170, width: 120, height: 120)).fill()
+            func hills(_ points: [(Double, Double)], _ color: NSColor) {
+                let path = NSBezierPath()
+                path.move(to: NSPoint(x: 0, y: 0))
+                points.forEach { path.line(to: NSPoint(x: $0.0, y: $0.1)) }
+                path.line(to: NSPoint(x: 640, y: 0))
+                path.close()
+                color.setFill()
+                path.fill()
+            }
+            hills([(0, 150), (130, 250), (240, 170), (360, 280), (500, 160), (640, 230)],
+                  NSColor(red: 0.36, green: 0.31, blue: 0.70, alpha: 1))
+            hills([(0, 90), (110, 160), (230, 100), (380, 190), (520, 110), (640, 150)],
+                  NSColor(red: 0.20, green: 0.17, blue: 0.42, alpha: 1))
+            hills([(0, 50), (200, 85), (420, 55), (640, 90)], NSColor(red: 0.12, green: 0.10, blue: 0.26, alpha: 1))
             return true
         }
         if let tiff = image.tiffRepresentation, let png = NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:]) {

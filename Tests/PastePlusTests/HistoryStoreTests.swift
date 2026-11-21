@@ -25,6 +25,19 @@ final class HistoryStoreTests: XCTestCase {
         XCTAssertEqual(Capture.text("just words").kind, .text)
     }
 
+    func testHexColorDetection() throws {
+        let amber = try XCTUnwrap(Classifier.hexColor(" #FFB833\n"))
+        XCTAssertEqual(amber.red, 1, accuracy: 0.001)
+        XCTAssertEqual(amber.green, 184.0 / 255, accuracy: 0.001)
+        XCTAssertEqual(amber.alpha, 1)
+        XCTAssertEqual(try XCTUnwrap(Classifier.hexColor("#0f8")).green, 1, accuracy: 0.001)
+        XCTAssertEqual(try XCTUnwrap(Classifier.hexColor("#00000080")).alpha, 128.0 / 255, accuracy: 0.001)
+        XCTAssertNil(Classifier.hexColor("FFB833"))
+        XCTAssertNil(Classifier.hexColor("#FFB83"))
+        XCTAssertNil(Classifier.hexColor("#GGGGGG"))
+        XCTAssertNil(Classifier.hexColor("color: #FFB833"))
+    }
+
     func testLinkHostComesFromTheStringAlone() {
         let item = makeStore().add(.text("https://www.example.com/some/page"))
         XCTAssertEqual(item.linkHost, "example.com")

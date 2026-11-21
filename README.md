@@ -9,7 +9,7 @@ Press ⇧⌘V in any app and a strip of cards slides up with everything you copi
 ## What it does
 
 - **History behind one shortcut.** ⇧⌘V opens the history on top of any app. The app you were typing in stays active, so the paste lands there.
-- **Previews that fit the content.** Text shows its first lines, a screenshot shows a thumbnail, a file shows its icon and folder.
+- **Previews that fit the content.** Text shows its first lines, a screenshot shows a thumbnail, a file shows its icon and folder, and a hex colour such as `#FFB833` shows the colour itself.
 - **Links without the network.** A link is drawn as a card with its domain and address, taken from the text itself. Copy That never fetches a preview and never contacts the network at all.
 - **Search and tabs.** Just start typing. Tab moves between All, Text, Links, Images, Files and your groups.
 - **Snippets in groups.** Save a history entry into a group with ⌘P, or write a snippet by hand with ⌘N. Snippets are separate copies: they are not pushed out by the history limits and keep their place in the group.
