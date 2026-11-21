@@ -1,4 +1,5 @@
 // Draws the app icon and writes a 1024px PNG. Usage: swift make-icon.swift <output.png>
+// A stack of copied cards, the newest one ticked: "copy that" as in "got it".
 import AppKit
 
 let size = 1024.0
@@ -8,22 +9,42 @@ image.lockFocus()
 let inset = 100.0
 let rect = NSRect(x: inset, y: inset, width: size - 2 * inset, height: size - 2 * inset)
 let background = NSBezierPath(roundedRect: rect, xRadius: 185, yRadius: 185)
-NSGradient(colors: [NSColor(red: 0.36, green: 0.56, blue: 0.98, alpha: 1),
-                    NSColor(red: 0.22, green: 0.30, blue: 0.80, alpha: 1)])!.draw(in: background, angle: -90)
+NSGradient(colors: [NSColor(red: 0.27, green: 0.22, blue: 0.56, alpha: 1),
+                    NSColor(red: 0.10, green: 0.08, blue: 0.24, alpha: 1)])!.draw(in: background, angle: -90)
 
-// Three stacked cards, the front one white.
-func card(_ x: Double, _ y: Double, _ alpha: Double) {
-    NSColor.white.withAlphaComponent(alpha).setFill()
-    NSBezierPath(roundedRect: NSRect(x: x, y: y, width: 400, height: 460), xRadius: 56, yRadius: 56).fill()
+let violet = NSColor(red: 0.56, green: 0.50, blue: 1.00, alpha: 1)
+let mint = NSColor(red: 0.18, green: 0.83, blue: 0.68, alpha: 1)
+let amber = NSColor(red: 1.00, green: 0.80, blue: 0.36, alpha: 1)
+let ink = NSColor(red: 0.13, green: 0.10, blue: 0.30, alpha: 1)
+
+let cardWidth = 400.0, cardHeight = 480.0, step = 74.0
+let originX = (size - cardWidth) / 2 - step, originY = (size - cardHeight) / 2 - step
+
+/// One card of the stack; `index` 0 is the front one, lower left.
+func card(_ index: Int, _ color: NSColor) -> NSRect {
+    let frame = NSRect(x: originX + step * Double(index), y: originY + step * Double(index), width: cardWidth, height: cardHeight)
+    // A dark rim keeps the cards apart where they overlap.
+    ink.withAlphaComponent(0.55).setFill()
+    NSBezierPath(roundedRect: frame.insetBy(dx: -14, dy: -14), xRadius: 86, yRadius: 86).fill()
+    color.setFill()
+    NSBezierPath(roundedRect: frame, xRadius: 72, yRadius: 72).fill()
+    return frame
 }
-card(392, 352, 0.30)
-card(312, 292, 0.55)
-card(232, 232, 1.0)
 
-// Plus sign on the front card
-NSColor(red: 0.24, green: 0.36, blue: 0.86, alpha: 1).setFill()
-NSBezierPath(roundedRect: NSRect(x: 404, y: 342, width: 56, height: 240), xRadius: 28, yRadius: 28).fill()
-NSBezierPath(roundedRect: NSRect(x: 312, y: 434, width: 240, height: 56), xRadius: 28, yRadius: 28).fill()
+_ = card(2, mint)
+_ = card(1, violet)
+let front = card(0, amber)
+
+// The tick on the front card
+let tick = NSBezierPath()
+tick.move(to: NSPoint(x: front.minX + 104, y: front.midY - 6))
+tick.line(to: NSPoint(x: front.minX + 176, y: front.midY - 82))
+tick.line(to: NSPoint(x: front.maxX - 100, y: front.midY + 92))
+tick.lineWidth = 58
+tick.lineCapStyle = .round
+tick.lineJoinStyle = .round
+ink.setStroke()
+tick.stroke()
 
 image.unlockFocus()
 
