@@ -103,6 +103,7 @@ Environment variables that make the app easier to test. Run the built binary dir
 | `PASTEPLUS_DEMO_QUERY=text` | Type that into the search field |
 | `PASTEPLUS_DEMO_SHOW=group`, `editor` or `newgroup` | Open the first group, the snippet editor or the group name field |
 | `PASTEPLUS_SNAPSHOT_DIR=/path` | Open the panel, save `panel.png` there after two seconds and quit |
+| `PASTEPLUS_SNAPSHOT_WIDTH=1240` | Make the panel that wide for the snapshot, instead of the screen width |
 
 ## Releasing
 

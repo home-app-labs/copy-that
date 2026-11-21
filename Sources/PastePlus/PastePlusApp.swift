@@ -140,9 +140,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 /// Developer aids, driven by environment variables:
 /// PASTEPLUS_DATA_DIR=/path keeps the history somewhere other than Application Support,
 /// PASTEPLUS_DEMO=1 fills an empty history with sample items,
-/// PASTEPLUS_SNAPSHOT_DIR=/path opens the panel, saves panel.png there after two seconds and quits.
+/// PASTEPLUS_SNAPSHOT_DIR=/path opens the panel, saves panel.png there after two seconds and quits,
+/// PASTEPLUS_SNAPSHOT_WIDTH=1240 makes the panel that wide for the snapshot instead of the screen width.
 enum Debug {
     static let snapshotDirectory = ProcessInfo.processInfo.environment["PASTEPLUS_SNAPSHOT_DIR"]
+    static let snapshotWidth = snapshotDirectory == nil ? nil
+        : ProcessInfo.processInfo.environment["PASTEPLUS_SNAPSHOT_WIDTH"].flatMap(Double.init).map { CGFloat($0) }
 
     static func runHooks() {
         let env = ProcessInfo.processInfo.environment

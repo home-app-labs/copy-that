@@ -245,7 +245,8 @@ final class HistoryPanel: NSObject, NSWindowDelegate {
         let mouse = NSEvent.mouseLocation
         let screen = NSScreen.screens.first { $0.frame.contains(mouse) } ?? NSScreen.main ?? NSScreen.screens[0]
         let area = screen.visibleFrame.insetBy(dx: 10, dy: 0)
-        let frame = NSRect(x: area.minX, y: area.minY + 10, width: area.width, height: Self.height)
+        var frame = NSRect(x: area.minX, y: area.minY + 10, width: area.width, height: Self.height)
+        if let width = Debug.snapshotWidth { frame.size.width = width }
 
         panel.setFrame(frame.offsetBy(dx: 0, dy: -24), display: true)
         panel.alphaValue = 0
