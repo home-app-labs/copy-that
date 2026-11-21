@@ -9,6 +9,7 @@ Press ⇧⌘V in any app and a strip of cards slides up with everything you copi
 ## What it does
 
 - **History behind one shortcut.** ⇧⌘V opens the history on top of any app. The app you were typing in stays active, so the paste lands there.
+- **Or one click.** No shortcut needed: click the icon in the Dock or the one in the menu bar. Pick a card and Copy That goes back to the app you came from and pastes there. The Dock icon can be switched off in the menu bar menu.
 - **Previews that fit the content.** Text shows its first lines, a screenshot shows a thumbnail, a file shows its icon and folder, and a hex colour such as `#FFB833` shows the colour itself.
 - **Links without the network.** A link is drawn as a card with its domain and address, taken from the text itself. Copy That never fetches a preview and never contacts the network at all.
 - **Search and tabs.** Just start typing. Tab moves between All, Text, Links, Images, Files and your groups.
@@ -22,7 +23,7 @@ Press ⇧⌘V in any app and a strip of cards slides up with everything you copi
 
 | Key | Action |
 | --- | --- |
-| ⇧⌘V | Open or close the history |
+| ⇧⌘V, or a click on the Dock icon | Open or close the history |
 | ← → | Select a card. With ⌘: jump to the first or last |
 | Return | Paste the selected card |
 | Shift-Return | Paste it as plain text |

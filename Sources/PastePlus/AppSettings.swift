@@ -21,6 +21,9 @@ final class AppSettings: ObservableObject {
         }
     }
 
+    /// The Dock icon gives people who do not use the shortcut something to click. On by default.
+    @Published var showInDock: Bool { didSet { defaults.set(showInDock, forKey: "showInDock") } }
+
     @Published var retentionDays: Int {
         didSet {
             defaults.set(retentionDays, forKey: "retentionDays")
@@ -39,6 +42,7 @@ final class AppSettings: ObservableObject {
         let saved = defaults.integer(forKey: "historyLimit")
         historyLimit = saved > 0 ? saved : 500
         retentionDays = defaults.integer(forKey: "retentionDays")
+        showInDock = defaults.object(forKey: "showInDock") as? Bool ?? true
     }
 
     var launchAtLogin: Bool {

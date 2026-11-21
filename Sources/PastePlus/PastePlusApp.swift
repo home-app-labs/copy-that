@@ -9,7 +9,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let app = NSApplication.shared
         let delegate = AppDelegate()
         app.delegate = delegate
-        app.setActivationPolicy(.accessory)
+        // Snapshots for the website and tests must not flash an icon in the Dock.
+        let inDock = AppSettings.shared.showInDock && Debug.snapshotDirectory == nil
+        app.setActivationPolicy(inDock ? .regular : .accessory)
         app.run()
     }
 
@@ -23,17 +25,57 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             hotKey = HotKey.historyShortcut { HistoryPanel.shared.toggle() }
         }
         setUpStatusItem()
+        setUpMainMenu()
+        HistoryPanel.shared.trackFrontmostApp()
         Debug.runHooks()
+        // The very first launch shows the history, so there is something to see besides a new icon.
+        if Debug.snapshotDirectory == nil, !UserDefaults.standard.bool(forKey: "welcomed") {
+            UserDefaults.standard.set(true, forKey: "welcomed")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { HistoryPanel.shared.show() }
+        }
     }
 
     func applicationWillTerminate(_ notification: Notification) {
         HistoryStore.shared.saveNow()
     }
 
-    /// Opening the app again (Spotlight, Finder) shows the history.
+    /// Clicking the Dock icon, or opening the app again from Spotlight or Finder, shows the history.
+    /// A second click puts it away and goes back to the app that was in front.
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        HistoryPanel.shared.show()
+        if HistoryPanel.shared.isVisible { HistoryPanel.shared.hide(returnFocus: true) } else { HistoryPanel.shared.show() }
         return false
+    }
+
+    func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
+        let menu = NSMenu()
+        add(menu, "Show History", #selector(showHistory))
+        add(menu, "Pause Capturing", #selector(togglePause)).state = AppSettings.shared.paused ? .on : .off
+        return menu
+    }
+
+    /// The menu bar shown while Copy That is the active app, which happens after a click on its Dock icon.
+    private func setUpMainMenu() {
+        let main = NSMenu()
+        let appMenu = NSMenu()
+        add(appMenu, "Show History", #selector(showHistory))
+        appMenu.addItem(.separator())
+        let hide = appMenu.addItem(withTitle: "Hide Copy That", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
+        hide.target = NSApp
+        let quit = appMenu.addItem(withTitle: "Quit Copy That", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        quit.target = NSApp
+        main.addItem(withTitle: "Copy That", action: nil, keyEquivalent: "").submenu = appMenu
+
+        // Standard editing commands, so the search field and the snippet editor behave like any text field.
+        let edit = NSMenu(title: "Edit")
+        edit.addItem(withTitle: "Undo", action: Selector(("undo:")), keyEquivalent: "z")
+        edit.addItem(withTitle: "Redo", action: Selector(("redo:")), keyEquivalent: "Z")
+        edit.addItem(.separator())
+        edit.addItem(withTitle: "Cut", action: #selector(NSText.cut(_:)), keyEquivalent: "x")
+        edit.addItem(withTitle: "Copy", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
+        edit.addItem(withTitle: "Paste", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
+        edit.addItem(withTitle: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+        main.addItem(withTitle: "Edit", action: nil, keyEquivalent: "").submenu = edit
+        NSApp.mainMenu = main
     }
 
     // MARK: Menu bar
@@ -91,6 +133,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         add(menu, "Keep History", nil).submenu = periods
 
         add(menu, "Launch at Login", #selector(toggleLaunchAtLogin)).state = settings.launchAtLogin ? .on : .off
+        add(menu, "Show in Dock", #selector(toggleDock)).state = settings.showInDock ? .on : .off
         add(menu, "Clear History…", #selector(clearHistory))
         menu.addItem(.separator())
         let quit = add(menu, "Quit Copy That", #selector(NSApplication.terminate(_:)))
@@ -123,6 +166,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     @objc private func setLimit(_ sender: NSMenuItem) { AppSettings.shared.historyLimit = sender.tag }
 
     @objc private func setRetention(_ sender: NSMenuItem) { AppSettings.shared.retentionDays = sender.tag }
+
+    @objc private func toggleDock() {
+        AppSettings.shared.showInDock.toggle()
+        NSApp.setActivationPolicy(AppSettings.shared.showInDock ? .regular : .accessory)
+    }
 
     @objc private func toggleLaunchAtLogin() { AppSettings.shared.launchAtLogin.toggle() }
 

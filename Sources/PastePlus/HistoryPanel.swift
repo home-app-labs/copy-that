@@ -235,7 +235,7 @@ final class HistoryPanel: NSObject, NSWindowDelegate {
 
     var isVisible: Bool { panel?.isVisible ?? false }
 
-    func toggle() { isVisible ? hide() : show() }
+    func toggle() { isVisible ? hide(returnFocus: true) : show() }
 
     func show() {
         let panel = self.panel ?? makePanel()
@@ -266,10 +266,31 @@ final class HistoryPanel: NSObject, NSWindowDelegate {
         }
     }
 
-    func hide() {
+    /// Closes the panel. With `returnFocus`, and when Copy That itself is the active app (it was opened
+    /// from the Dock), the app that was in front before comes back, so a paste lands there.
+    func hide(returnFocus: Bool = false) {
         if let keyMonitor { NSEvent.removeMonitor(keyMonitor) }
         keyMonitor = nil
         panel?.orderOut(nil)
+        guard returnFocus, NSApp.isActive else { return }
+        if let previousApp, !previousApp.isTerminated { previousApp.activate() } else { NSApp.hide(nil) }
+    }
+
+    /// The app the user was in before Copy That came to the front.
+    private var previousApp: NSRunningApplication?
+
+    /// Remembers which other app was active last. Needed when the panel is opened from the Dock,
+    /// because that click makes Copy That the active app.
+    func trackFrontmostApp() {
+        let own = Bundle.main.bundleIdentifier
+        if let app = NSWorkspace.shared.frontmostApplication, app.bundleIdentifier != own { previousApp = app }
+        NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main) { [weak self] note in
+            guard let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
+                  app.bundleIdentifier != own, app.processIdentifier != ProcessInfo.processInfo.processIdentifier
+            else { return }
+            self?.previousApp = app
+        }
     }
 
     private func makePanel() -> NSPanel {
@@ -297,9 +318,11 @@ final class HistoryPanel: NSObject, NSWindowDelegate {
     /// Puts the item on the clipboard, closes the panel and pastes into the app underneath.
     func paste(_ item: ClipItem, plainText: Bool = false) {
         PasteboardWatcher.shared.write(item, plainText: plainText)
-        hide()
+        // Opened from the Dock, the other app first has to come back to the front: give it a moment longer.
+        let delay = NSApp.isActive ? 0.35 : 0.12
+        hide(returnFocus: true)
         if Paster.isTrusted {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { Paster.sendPaste() }
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { Paster.sendPaste() }
         } else if !askedForTrust {
             // Without Accessibility the item is only copied; ask once per launch.
             askedForTrust = true
@@ -310,7 +333,7 @@ final class HistoryPanel: NSObject, NSWindowDelegate {
     /// Copies without pasting.
     func copy(_ item: ClipItem) {
         PasteboardWatcher.shared.write(item)
-        hide()
+        hide(returnFocus: true)
     }
 
     /// Returns true when the key was used by the panel rather than the search field.
@@ -331,7 +354,7 @@ final class HistoryPanel: NSObject, NSWindowDelegate {
         }
         switch key {
         case 53: // esc
-            if model.query.isEmpty { hide() } else { model.query = "" }
+            if model.query.isEmpty { hide(returnFocus: true) } else { model.query = "" }
             return true
         case 123: model.move(command ? -10_000 : -1); return true
         case 124: model.move(command ? 10_000 : 1); return true
