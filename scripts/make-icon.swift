@@ -1,5 +1,5 @@
 // Draws the app icon and writes a 1024px PNG. Usage: swift make-icon.swift <output.png>
-// Three copied things stacked like the cards in the app: a colour, a picture and a piece of code.
+// Three copied things stacked like the cards in the app: a colour, a picture and, in front, the paste shortcut.
 import AppKit
 
 let size = 1024.0
@@ -63,18 +63,23 @@ card(1) { frame in
     hills([(0, 0.40), (0.30, 0.66), (0.55, 0.42), (0.78, 0.60), (1, 0.36)], NSColor(red: 0.33, green: 0.27, blue: 0.72, alpha: 1))
 }
 
-// Front: a copied piece of code.
+// Front: the paste shortcut on a sheet of paper. Pass "lines" as the second argument to draw lines of text instead.
 card(0) { frame in
-    NSColor(red: 0.07, green: 0.06, blue: 0.15, alpha: 1).setFill()
+    NSColor(red: 0.97, green: 0.96, blue: 1.00, alpha: 1).setFill()
     frame.fill()
-    let left = frame.minX + 46, top = frame.maxY - 76, line = 50.0
-    bar(left, top, 104, violet)
-    bar(left + 122, top, 150, NSColor(white: 1, alpha: 0.85))
-    bar(left + 50, top - line, 196, mint)
-    bar(left + 50, top - 2 * line, 92, amber)
-    bar(left + 160, top - 2 * line, 124, NSColor(white: 1, alpha: 0.55))
-    bar(left + 50, top - 3 * line, 150, violet)
-    bar(left, top - 4 * line, 64, NSColor(white: 1, alpha: 0.85))
+    let paper = NSColor(red: 0.16, green: 0.13, blue: 0.36, alpha: 1)
+    if !(CommandLine.arguments.count > 2 && CommandLine.arguments[2] == "lines") {
+        let font = NSFont.systemFont(ofSize: 176, weight: .bold)
+        let rounded = font.fontDescriptor.withDesign(.rounded).flatMap { NSFont(descriptor: $0, size: 176) } ?? font
+        let text = NSAttributedString(string: "⌘V", attributes: [.font: rounded, .foregroundColor: paper, .kern: 6])
+        let bounds = text.size()
+        text.draw(at: NSPoint(x: frame.midX - bounds.width / 2, y: frame.midY - bounds.height / 2))
+    } else {
+        let left = frame.minX + 50, top = frame.maxY - 78, line = 49.0
+        for (index, width) in [300.0, 340, 250, 320, 170].enumerated() {
+            bar(left, top - Double(index) * line, width, paper.withAlphaComponent(index == 0 ? 0.95 : 0.55), height: 26)
+        }
+    }
 }
 
 image.unlockFocus()
