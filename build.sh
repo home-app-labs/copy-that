@@ -33,8 +33,15 @@ cp Resources/Info.plist "$APP/Contents/Info.plist"
 cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $(date +%Y%m%d%H%M%S)" "$APP/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$APP/Contents/Info.plist"
-# PASTEPLUS_SIGN_IDENTITY="Apple Development: ..." keeps the Accessibility permission across rebuilds.
-codesign --force --sign "${PASTEPLUS_SIGN_IDENTITY:--}" "$APP"
+# An ad-hoc signature is normally identified by its hash, which changes with every build, so macOS
+# would forget the Accessibility permission after each rebuild or update. Naming the app by its
+# identifier instead keeps the permission. PASTEPLUS_SIGN_IDENTITY="Apple Development: ..." signs
+# with a real certificate, which needs no such rule.
+if [ -n "${PASTEPLUS_SIGN_IDENTITY:-}" ]; then
+    codesign --force --sign "$PASTEPLUS_SIGN_IDENTITY" "$APP"
+else
+    codesign --force --sign - --requirements '=designated => identifier "local.pasteplus"' "$APP"
+fi
 echo "Built $APP"
 
 LSREGISTER=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister

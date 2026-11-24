@@ -14,6 +14,7 @@ Press ⇧⌘V in any app and a strip of cards slides up with everything you copi
 - **Links without the network.** A link is drawn as a card with its domain and address, taken from the text itself. Copy That never fetches a preview and never contacts the network at all.
 - **Search and tabs.** Just start typing. Tab moves between All, Text, Links, Images, Files and your groups.
 - **Snippets in groups.** Save a history entry into a group with ⌘P, or write a snippet by hand with ⌘N. Snippets are separate copies: they are not pushed out by the history limits and keep their place in the group.
+- **A closer look.** Space opens a large preview of the selected card: the whole text, the picture at full size, the colour. Links stay text there too.
 - **Paste the way you want.** Return pastes, Shift-Return pastes as plain text, ⌘1–9 pastes by number, ⌘C only copies.
 - **You decide how long history lives.** Limit it by number of items and by age, from one day to forever.
 - **Passwords stay out.** Entries that password managers mark as concealed or temporary are not recorded, and recording can be paused from the menu bar.
@@ -25,6 +26,7 @@ Press ⇧⌘V in any app and a strip of cards slides up with everything you copi
 | --- | --- |
 | ⇧⌘V, or a click on the Dock icon | Open or close the history |
 | ← → | Select a card. With ⌘: jump to the first or last |
+| Space | Open or close a large preview of the selected card. While you type a search, Space types a space |
 | Return | Paste the selected card |
 | Shift-Return | Paste it as plain text |
 | ⌘1–9 | Paste the card with that number |
@@ -63,7 +65,9 @@ You need Xcode 15 or later.
 
 `./build.sh` assembles `build/Copy That.app`, `--install` copies it to `/Applications`, `--run` opens it. Run the tests with `swift test`.
 
-The app is signed ad hoc, so macOS forgets the Accessibility permission after every rebuild: remove Copy That from the list and add it again. If you have a signing certificate, `PASTEPLUS_SIGN_IDENTITY="..." ./build.sh` keeps the permission.
+The app is signed ad hoc. An ad-hoc signature is normally identified by its hash, which changes with every build, so macOS would forget the Accessibility permission each time. `build.sh` therefore names the app by its identifier `local.pasteplus` in the signature, and the permission survives rebuilds and updates. The price: macOS will treat any app on the same Mac that carries this identifier as Copy That. If you have a signing certificate, `PASTEPLUS_SIGN_IDENTITY="..." ./build.sh` signs with it instead.
+
+Coming from a build made before this change, the old permission no longer matches: remove Copy That from the Accessibility list, or run `tccutil reset Accessibility local.pasteplus`, and allow it once more.
 
 ## Layout
 
@@ -75,6 +79,7 @@ The app is signed ad hoc, so macOS forgets the Accessibility permission after ev
 | `Sources/PastePlus/HotKey.swift` | The system-wide ⇧⌘V shortcut |
 | `Sources/PastePlus/HistoryPanel.swift` | The panel, its keys, search and selection state |
 | `Sources/PastePlus/HistoryView.swift` | Cards, group tabs, the snippet editor |
+| `Sources/PastePlus/PreviewView.swift` | The large preview opened with Space |
 | `Sources/PastePlus/PastePlusApp.swift` | Launch, the menu bar menu, development aids |
 | `Tests` | Unit tests for the history, groups and link detection |
 | `Resources` | Info.plist and the icon |
@@ -103,6 +108,8 @@ Environment variables that make the app easier to test. Run the built binary dir
 | `PASTEPLUS_DEMO=1` | Fill an empty history with sample items and groups |
 | `PASTEPLUS_DEMO_QUERY=text` | Type that into the search field |
 | `PASTEPLUS_DEMO_SHOW=group`, `editor` or `newgroup` | Open the first group, the snippet editor or the group name field |
+| `PASTEPLUS_DEMO_SHOW=preview` | Open the large preview of the selected item, saved as `preview.png` |
+| `PASTEPLUS_DEMO_FILTER=text`, `link`, `image` or `file` | Open that tab |
 | `PASTEPLUS_SNAPSHOT_DIR=/path` | Open the panel, save `panel.png` there after two seconds and quit |
 | `PASTEPLUS_SNAPSHOT_WIDTH=1240` | Make the panel that wide for the snapshot, instead of the screen width |
 

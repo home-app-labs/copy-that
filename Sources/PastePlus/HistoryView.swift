@@ -290,6 +290,7 @@ struct HistoryView: View {
             } else {
                 hint("↩", "Paste")
                 hint("⇧↩", "Plain text")
+                hint("space", "Preview")
                 hint("⌘1–9", "Quick paste")
                 hint("⌘C", "Copy")
                 if model.selectedItem?.groupID == nil { hint("⌘P", "Save to group") } else { hint("⌘E", "Edit") }
@@ -559,12 +560,12 @@ struct ThumbnailView: View {
         }
     }
 
-    nonisolated static func load(_ url: URL) -> NSImage? {
+    nonisolated static func load(_ url: URL, maxPixelSize: Int = 640) -> NSImage? {
         guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
         let options: [CFString: Any] = [
             kCGImageSourceCreateThumbnailFromImageAlways: true,
             kCGImageSourceCreateThumbnailWithTransform: true,
-            kCGImageSourceThumbnailMaxPixelSize: 640,
+            kCGImageSourceThumbnailMaxPixelSize: maxPixelSize,
         ]
         guard let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else { return nil }
         return NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))

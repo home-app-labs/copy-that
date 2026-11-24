@@ -204,8 +204,15 @@ enum Debug {
         HistoryPanel.shared.show()
         let model = HistoryPanel.shared.model
         if let query = env["PASTEPLUS_DEMO_QUERY"] { model.query = query }
+        // PASTEPLUS_DEMO_FILTER=text|link|image|file opens that tab.
+        if let name = env["PASTEPLUS_DEMO_FILTER"],
+           let filter = HistoryFilter.kinds.first(where: { "\($0)" == name }) { model.filter = filter }
+        // PASTEPLUS_DEMO_SHOW=preview opens the large preview of the selected item, as Space does.
+        if env["PASTEPLUS_DEMO_SHOW"] == "preview" {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { HistoryPanel.shared.showPreview() }
+        }
         // PASTEPLUS_DEMO_SHOW=group|editor|newgroup opens the first group, the snippet editor or the group name field.
-        if let show = env["PASTEPLUS_DEMO_SHOW"], let group = HistoryStore.shared.groups.first {
+        else if let show = env["PASTEPLUS_DEMO_SHOW"], let group = HistoryStore.shared.groups.first {
             model.filter = .group(group.id)
             if show == "editor", let item = model.visible.first { model.beginEdit(item) }
             if show == "newgroup" { model.beginNewGroup() }

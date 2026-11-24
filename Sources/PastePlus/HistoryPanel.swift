@@ -230,6 +230,7 @@ final class HistoryPanel: NSObject, NSWindowDelegate {
     /// Set by debug snapshots so the panel survives losing focus.
     var staysOpen = false
     private var panel: NSPanel?
+    private var previewPanel: NSPanel?
     private var keyMonitor: Any?
     private var askedForTrust = false
 
@@ -271,6 +272,7 @@ final class HistoryPanel: NSObject, NSWindowDelegate {
     func hide(returnFocus: Bool = false) {
         if let keyMonitor { NSEvent.removeMonitor(keyMonitor) }
         keyMonitor = nil
+        hidePreview()
         panel?.orderOut(nil)
         guard returnFocus, NSApp.isActive else { return }
         if let previousApp, !previousApp.isTerminated { previousApp.activate() } else { NSApp.hide(nil) }
@@ -313,6 +315,55 @@ final class HistoryPanel: NSObject, NSWindowDelegate {
         if !staysOpen { hide() }
     }
 
+    // MARK: Preview
+
+    var isPreviewVisible: Bool { previewPanel?.isVisible ?? false }
+
+    /// Space: shows the selected item large, above the strip. It follows the selection while open.
+    func togglePreview() { isPreviewVisible ? hidePreview() : showPreview() }
+
+    func showPreview() {
+        guard let panel, model.selectedItem != nil else { return }
+        let preview = previewPanel ?? makePreviewPanel()
+        previewPanel = preview
+
+        let strip = panel.frame
+        let area = (panel.screen ?? NSScreen.main)?.visibleFrame ?? strip
+        let width = min(860, strip.width - 40)
+        let height = min(580, area.maxY - strip.maxY - 24)
+        guard height >= 160 else { return }
+        preview.setFrame(NSRect(x: strip.midX - width / 2, y: strip.maxY + 12, width: width, height: height), display: true)
+        panel.addChildWindow(preview, ordered: .above)
+        preview.alphaValue = 0
+        preview.orderFront(nil)
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.12
+            preview.animator().alphaValue = 1
+        }
+    }
+
+    func hidePreview() {
+        guard let previewPanel, previewPanel.isVisible else { return }
+        panel?.removeChildWindow(previewPanel)
+        previewPanel.orderOut(nil)
+    }
+
+    private func makePreviewPanel() -> NSPanel {
+        // Never key: the keyboard stays with the strip, so the arrows keep moving the selection.
+        let preview = NSPanel(contentRect: .zero, styleMask: [.borderless, .nonactivatingPanel],
+                              backing: .buffered, defer: false)
+        preview.level = .statusBar
+        preview.isOpaque = false
+        preview.backgroundColor = .clear
+        preview.hasShadow = true
+        preview.hidesOnDeactivate = false
+        preview.isMovable = false
+        preview.animationBehavior = .none
+        preview.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
+        preview.contentView = NSHostingView(rootView: PreviewView(model: model))
+        return preview
+    }
+
     // MARK: Actions
 
     /// Puts the item on the clipboard, closes the panel and pastes into the app underneath.
@@ -342,6 +393,7 @@ final class HistoryPanel: NSObject, NSWindowDelegate {
         let command = flags.contains(.command)
         let key = Int(event.keyCode)
         // While something is being typed, only Esc and the confirming key belong to the panel.
+        if model.editor != nil || model.groupDraft != nil { hidePreview() }
         if model.editor != nil {
             if key == 53 { model.editor = nil; return true }
             if (key == 36 || key == 76) && command { model.commitEditor(); return true }
@@ -354,7 +406,13 @@ final class HistoryPanel: NSObject, NSWindowDelegate {
         }
         switch key {
         case 53: // esc
-            if model.query.isEmpty { hide(returnFocus: true) } else { model.query = "" }
+            if isPreviewVisible { hidePreview() }
+            else if model.query.isEmpty { hide(returnFocus: true) } else { model.query = "" }
+            return true
+        case 49 where flags.isEmpty: // space
+            // While a search is being typed, Space belongs to the search field.
+            guard isPreviewVisible || model.query.isEmpty else { return false }
+            togglePreview()
             return true
         case 123: model.move(command ? -10_000 : -1); return true
         case 124: model.move(command ? 10_000 : 1); return true
@@ -386,9 +444,11 @@ final class HistoryPanel: NSObject, NSWindowDelegate {
             model.saveSelected()
             return true
         case 45: // N
+            hidePreview()
             model.beginNewSnippet()
             return true
         case 14: // E
+            hidePreview()
             if let item = model.selectedItem { model.beginEdit(item) }
             return true
         default:
@@ -396,9 +456,16 @@ final class HistoryPanel: NSObject, NSWindowDelegate {
         }
     }
 
-    /// Debug aid: renders the panel into a PNG.
+    /// Debug aid: renders the panel into a PNG, and the preview into preview.png next to it when it is open.
     func snapshot(to url: URL) {
-        guard let view = panel?.contentView, let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return }
+        Self.snapshot(panel, to: url)
+        if isPreviewVisible {
+            Self.snapshot(previewPanel, to: url.deletingLastPathComponent().appendingPathComponent("preview.png"))
+        }
+    }
+
+    private static func snapshot(_ window: NSWindow?, to url: URL) {
+        guard let view = window?.contentView, let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return }
         view.cacheDisplay(in: view.bounds, to: rep)
         try? rep.representation(using: .png, properties: [:])?.write(to: url)
     }
