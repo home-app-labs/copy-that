@@ -215,6 +215,11 @@ final class PanelModel: ObservableObject {
     }
 }
 
+/// Takes clicks straight away although its window is never the key one, so the Close button works on the first click.
+private final class FirstClickHostingView<Content: View>: NSHostingView<Content> {
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+}
+
 private final class KeyPanel: NSPanel {
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { false }
@@ -360,7 +365,7 @@ final class HistoryPanel: NSObject, NSWindowDelegate {
         preview.isMovable = false
         preview.animationBehavior = .none
         preview.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
-        preview.contentView = NSHostingView(rootView: PreviewView(model: model))
+        preview.contentView = FirstClickHostingView(rootView: PreviewView(model: model) { [weak self] in self?.hidePreview() })
         return preview
     }
 

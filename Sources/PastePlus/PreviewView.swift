@@ -10,6 +10,8 @@ struct PreviewView: View {
     private static let imageExtensions: Set<String> = ["png", "jpg", "jpeg", "gif", "heic", "tiff", "tif", "bmp", "webp"]
 
     @ObservedObject var model: PanelModel
+    let close: () -> Void
+    @State private var overClose = false
 
     var body: some View {
         Group {
@@ -43,11 +45,24 @@ struct PreviewView: View {
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
             Spacer()
-            Text("space").font(.system(size: 11, weight: .semibold, design: .rounded)).foregroundStyle(.secondary)
-            Text("Close").font(.system(size: 11)).foregroundStyle(.tertiary)
+            Button(action: close) {
+                HStack(spacing: 5) {
+                    Text("space").font(.system(size: 11, weight: .semibold, design: .rounded)).foregroundStyle(.secondary)
+                    Text("Close").font(.system(size: 11)).foregroundStyle(.secondary)
+                    Image(systemName: "xmark").font(.system(size: 10, weight: .bold)).foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 10)
+                .frame(height: 26)
+                .background(Color.primary.opacity(overClose ? 0.16 : 0.08), in: Capsule())
+                .contentShape(Capsule())
+            }
+            .buttonStyle(.plain)
+            .onHover { overClose = $0 }
+            .help("Close the preview")
         }
-        .padding(.horizontal, 16)
-        .frame(height: 40)
+        .padding(.leading, 16)
+        .padding(.trailing, 10)
+        .frame(height: 44)
     }
 
     @ViewBuilder
